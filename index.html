@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Uni Log</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Uni Log">
+<meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1218" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: phone-first ledger — sticky header, stacked requirement rows, bottom tab bar */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --sunk:#e3e8ee; --ink:#121a24; --muted:#586474; --line:#d4dbe3;
+  --accent:#2347c5; --accent-ink:#ffffff; --plan:#d99a00; --plan-soft:#f6e2a8;
+  --ok:#1b7f4b; --warn:#a8650c; --bad:#b8380f;
+  --f-display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1218; --surface:#161d26; --sunk:#1e2731; --ink:#e6ebf1; --muted:#93a0af; --line:#2a3542;
+  --accent:#7d9bff; --accent-ink:#0d1218; --plan:#f0bf45; --plan-soft:#4a3d17;
+  --ok:#5cc98d; --warn:#e9a84a; --bad:#ff8a63; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1218; --surface:#161d26; --sunk:#1e2731; --ink:#e6ebf1; --muted:#93a0af; --line:#2a3542;
+  --accent:#7d9bff; --accent-ink:#0d1218; --plan:#f0bf45; --plan-soft:#4a3d17;
+  --ok:#5cc98d; --warn:#e9a84a; --bad:#ff8a63; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.top .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.top h1{font-family:var(--f-display);font-weight:700;font-size:26px;margin:0;line-height:1.05}
+.icon-btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:40px;height:40px;
+  display:grid;place-items:center;cursor:pointer}
+.icon-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7}
+
+main{max-width:760px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+.view{display:flex;flex-direction:column;gap:22px}
+h2{font-family:var(--f-display);font-weight:500;font-size:13px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+
+/* hero */
+.hero{padding:18px 16px 16px}
+.hero .big{font-family:var(--f-display);font-weight:700;font-size:56px;line-height:.95;letter-spacing:-.02em}
+.hero .big small{font-size:22px;color:var(--muted);font-weight:500;letter-spacing:0}
+.hero .sub{color:var(--muted);margin-top:4px}
+.bar{position:relative;height:14px;border-radius:7px;background:var(--sunk);overflow:hidden;margin-top:14px}
+.bar i{position:absolute;top:0;bottom:0;left:0;display:block}
+.bar .e{background:var(--accent);z-index:2}
+.bar .p{background:repeating-linear-gradient(-45deg,var(--plan) 0 4px,var(--plan-soft) 4px 8px);z-index:1}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+.sw.e{background:var(--accent)}
+.sw.p{background:repeating-linear-gradient(-45deg,var(--plan) 0 3px,var(--plan-soft) 3px 6px)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);
+  border-top:1px solid var(--line);margin:16px -16px -16px;border-radius:0 0 var(--r) var(--r);overflow:hidden}
+.stat{background:var(--surface);padding:12px 14px;min-width:0}
+.stat b{display:block;font-family:var(--f-mono);font-size:20px;font-weight:500}
+.stat span{font-size:12px;color:var(--muted)}
+
+/* requirement rows */
+.reqs{display:flex;flex-direction:column}
+.req{padding:14px 16px;border-top:1px solid var(--line);display:grid;gap:8px}
+.req:first-child{border-top:0}
+.req-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.req-name{font-weight:600}
+.req-rule{font-size:12px;color:var(--muted)}
+.req-val{font-family:var(--f-mono);font-size:14px;white-space:nowrap}
+.req .bar{height:8px;margin-top:0;border-radius:4px}
+.marker{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);z-index:3;opacity:.55}
+.req-foot{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;
+  font-weight:500;border:1px solid var(--line);background:var(--surface);white-space:nowrap}
+.chip.ok{color:var(--ok);border-color:currentColor}
+.chip.plan{color:var(--warn);border-color:currentColor}
+.chip.bad{color:var(--bad);border-color:currentColor}
+.chip.mute{color:var(--muted)}
+
+/* checkpoints */
+.checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.check{padding:12px;min-width:0}
+.check .t{font-size:12px;color:var(--muted)}
+.check .v{font-family:var(--f-mono);font-size:18px;margin:2px 0 6px}
+
+/* semesters */
+.sems{display:flex;flex-direction:column}
+.semrow{display:grid;grid-template-columns:86px minmax(0,1fr) 54px;gap:10px;align-items:center;padding:12px 16px;border-top:1px solid var(--line)}
+.semrow:first-child{border-top:0}
+.semlbl{all:unset;cursor:pointer;display:grid;gap:1px;min-width:0;border-radius:8px}
+.semlbl b{font-size:14px}
+.semlbl span{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.semlbl em{font-style:normal;font-size:12px;color:var(--accent)}
+.semlbl:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.addrow{width:100%;border:0;border-top:1px solid var(--line);background:transparent;color:var(--accent);font-weight:600;padding:12px 16px;text-align:left;cursor:pointer}
+.addrow:hover{background:var(--sunk)}
+.linkbtn{border:0;background:transparent;color:var(--accent);font-family:var(--f-body);font-size:13px;font-weight:600;cursor:pointer;padding:2px 4px;margin-left:6px}
+.group h3 .gh{font-family:var(--f-display);font-size:17px;color:var(--ink);min-width:0}
+/* attempts */
+.attlist{display:flex;flex-direction:column;gap:6px}
+.att{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;font-size:14px}
+.att .x{border:0;background:transparent;color:var(--bad);cursor:pointer;font-size:13px;flex:none}
+.attadd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px}
+.attadd input,.attadd select{padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);min-width:0;width:100%}
+@media (max-width:420px){.attadd{grid-template-columns:1fr 1fr}.attadd button{grid-column:1/-1}}
+.field label .chip{text-transform:none;letter-spacing:0;margin-left:6px}
+
+/* timetable */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:7px 14px;font-size:13px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.ttbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.ttbar select{padding:7px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);max-width:100%}
+.weekwrap{overflow-x:auto;border-radius:var(--r)}
+.week{display:grid;min-width:560px}
+.week .dh{font-size:12px;font-weight:600;padding:8px 6px;border-bottom:1px solid var(--line);text-align:center}
+.week .dh.today{color:var(--accent)}
+.week .tcol{position:relative}
+.week .tl{position:absolute;right:6px;font-size:11px;color:var(--muted);font-family:var(--f-mono)}
+.week .col{position:relative;border-left:1px solid var(--line);
+  background-image:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px var(--hh))}
+.week .col.today{background-color:color-mix(in srgb,var(--accent) 6%,transparent)}
+.blk{position:absolute;left:3px;right:3px;border-radius:7px;padding:4px 6px;font-size:11.5px;line-height:1.25;overflow:hidden;cursor:pointer;
+  border:0;border-left:3px solid var(--c);text-align:left;background:color-mix(in srgb,var(--c) 18%,var(--surface));color:var(--ink)}
+.blk b{display:block;font-size:12px}
+.blk span{color:var(--muted)}
+.mnav{display:flex;align-items:center;gap:8px}
+.mnav b{font-family:var(--f-display);font-size:18px;font-weight:500;min-width:10ch;text-align:center}
+.month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.month .wd{font-size:11px;color:var(--muted);text-align:center;padding:8px 0;letter-spacing:.06em;text-transform:uppercase}
+.day{all:unset;box-sizing:border-box;min-height:56px;padding:6px;border-top:1px solid var(--line);cursor:pointer;display:flex;flex-direction:column;gap:4px;min-width:0}
+.day .d{font-family:var(--f-mono);font-size:13px;width:24px;height:24px;display:grid;place-items:center;border-radius:999px}
+.day.out .d{color:var(--muted);opacity:.55}
+.day.today .d{background:var(--accent);color:var(--accent-ink)}
+.day[aria-pressed="true"]{background:var(--sunk)}
+.day:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.dots{display:flex;gap:3px;flex-wrap:wrap;padding-left:2px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--c)}
+.agenda{display:flex;flex-direction:column}
+.it{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 16px;border-top:1px solid var(--line)}
+.it:first-child{border-top:0}
+.it .bullet{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.ttb{all:unset;cursor:pointer;min-width:0;display:grid;gap:1px}
+.ttb b{font-weight:600;overflow-wrap:anywhere}
+.ttb span{font-size:12px;color:var(--muted)}
+.ttb:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.it.done .ttb b{text-decoration:line-through;color:var(--muted)}
+.it .right{display:flex;gap:10px;align-items:center}
+.days{font-family:var(--f-mono);font-size:13px;white-space:nowrap}
+.days.late{color:var(--bad)}
+.tick{width:20px;height:20px;accent-color:var(--ok);cursor:pointer}
+.checkrow{display:flex;gap:10px;align-items:center;font-size:14px}
+.bk{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.bk b{display:block}
+.bk .btn{justify-self:start}
+.bk.confirm{border-color:var(--warn)}
+.filebtn{display:inline-block;cursor:pointer}
+.checkrow input{width:18px;height:18px;accent-color:var(--accent)}
+.semrow .mods{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.semrow .bar{height:8px;margin-top:0}
+.semrow .cp{text-align:right;font-family:var(--f-mono)}
+.semrow.now{background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.tag{font-size:11px;padding:1px 6px;border-radius:5px;background:var(--sunk);color:var(--ink);max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* planner + notes */
+.planner{padding:16px;display:grid;gap:10px}
+.planner label{font-size:13px;color:var(--muted)}
+.planner .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.planner select{padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface)}
+.answer{font-size:15px}
+.answer b{font-family:var(--f-mono);font-size:22px;font-weight:500}
+.notes{display:flex;flex-direction:column}
+.note{padding:12px 16px;border-top:1px solid var(--line);font-size:14px;display:flex;gap:10px}
+.note:first-child{border-top:0}
+.note::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;margin-top:7px;background:var(--warn)}
+.note.info::before{background:var(--accent)}
+
+/* modules view */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid currentColor}
+.group h3{font-family:var(--f-display);font-weight:500;font-size:17px;margin:0 0 8px;display:flex;justify-content:space-between;gap:10px}
+.group h3 span{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-weight:400}
+.mod{width:100%;text-align:left;background:transparent;border:0;border-top:1px solid var(--line);padding:12px 16px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;cursor:pointer}
+.mod:first-child{border-top:0}
+.mod:hover{background:var(--sunk)}
+.mod .n{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.mod .g{font-family:var(--f-mono);font-size:18px;text-align:right}
+.mod .meta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted);align-items:center}
+.empty{padding:20px 16px;color:var(--muted);text-align:center}
+
+/* rules */
+.rules{padding:6px 16px}
+.rules dl{margin:0}
+.rules .r{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.rules .r:first-child{border-top:0}
+.rules dt{font-family:var(--f-mono);font-size:14px}
+.rules dd{margin:0}
+.rules dd b{display:block}
+.rules dd span{font-size:13px;color:var(--muted)}
+.prose{max-width:62ch;color:var(--muted);font-size:14px}
+.prose a{color:var(--accent)}
+
+/* tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+.tabbar button{border:0;background:transparent;padding:6px 4px;display:grid;justify-items:center;gap:2px;font-size:12px;color:var(--muted);cursor:pointer;border-radius:10px}
+.tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7}
+.tabbar button[aria-selected="true"]{color:var(--accent)}
+.fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:6;border-radius:999px;padding:12px 18px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+
+/* dialogs */
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);padding:0;width:min(520px,calc(100vw - 32px));max-height:calc(100dvh - 48px)}
+dialog::backdrop{background:rgba(8,12,18,.45)}
+.dlg{padding:18px 16px;display:grid;gap:14px;overflow:auto}
+.dlg h4{font-family:var(--f-display);font-size:20px;font-weight:700;margin:0}
+.field{display:grid;gap:5px;min-width:0}
+.field label{font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
+.field textarea{font-family:var(--f-mono);font-size:12px;min-height:120px;resize:vertical}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.hint{font-size:12px;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.actions .spacer{flex:1}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);
+  padding:8px 14px;border-radius:999px;font-size:13px;z-index:20}
+@media (max-width:420px){.hero .big{font-size:46px}.checks{gap:8px}.check{padding:10px}.semrow{grid-template-columns:72px minmax(0,1fr) 46px}}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .4s ease}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <div class="eyebrow">Saarland · M.Sc. Cybersecurity</div>
+    <h1>Uni Log</h1>
+  </div>
+  <button class="icon-btn" id="btnSettings" aria-label="Settings and backup">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<main>
+  <section class="view" id="view-overview"></section>
+  <section class="view" id="view-modules" hidden></section>
+  <section class="view" id="view-timetable" hidden></section>
+  <section class="view" id="view-rules" hidden></section>
+</main>
+
+<button class="btn fab" id="fab">+ Add module</button>
+
+<nav class="tabbar" role="tablist">
+  <button role="tab" data-tab="overview" aria-selected="true">
+    <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Outline</button>
+  <button role="tab" data-tab="modules" aria-selected="false">
+    <svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg>Modules</button>
+  <button role="tab" data-tab="timetable" aria-selected="false">
+    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Timetable</button>
+  <button role="tab" data-tab="rules" aria-selected="false">
+    <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg>Rules</button>
+</nav>
+
+<dialog id="dlgModule">
+  <form class="dlg" id="formModule">
+    <h4 id="dlgTitle">Add module</h4>
+    <div class="field"><label for="fName">Module name</label><input id="fName" required placeholder="e.g. Cryptography"></div>
+    <div class="two">
+      <div class="field"><label for="fCat">Category</label><select id="fCat"></select></div>
+      <div class="field"><label for="fCp">Credits (CP)</label><input id="fCp" type="number" min="1" max="60" step="1" required></div>
+    </div>
+    <div class="field" id="wrapCount"><label for="fCount">Counts toward</label><select id="fCount"></select>
+      <span class="hint" id="countHint"></span></div>
+    <div class="field" id="wrapExtra"><label for="fExtra">Elective type</label><select id="fExtra"></select></div>
+    <div class="two">
+      <div class="field"><label for="fSem">Semester</label><select id="fSem"></select></div>
+      <div class="field"><label for="fStatus">Status</label>
+        <select id="fStatus"><option value="passed">Passed</option><option value="awaiting">Exam done, awaiting grade</option><option value="planned">Planned / in progress</option></select></div>
+    </div>
+    <div class="field" id="wrapGrade"><label for="fGrade">Grade</label><select id="fGrade"></select>
+      <span class="hint">German scale: 1.0 is best, 4.0 is the lowest pass.</span></div>
+    <div class="field" id="wrapAttempts"><label>Exam attempts <span id="attLeft" class="chip mute"></span></label>
+      <div class="attlist" id="attList"></div>
+      <div class="attadd">
+        <input type="date" id="aDate" aria-label="Attempt date">
+        <select id="aResult" aria-label="Attempt result"></select>
+        <button type="button" class="btn ghost" id="aAdd">Log attempt</button>
+      </div>
+      <span class="hint">3 attempts per exam. A missed exam without a valid excuse counts as failed. A voluntary retake to improve a passed grade doesn't use an attempt; the better grade counts.</span>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn danger" id="btnDelete">Delete</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" id="btnCancel">Cancel</button>
+      <button type="submit" class="btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgSettings">
+  <div class="dlg">
+    <h4>Settings & backup</h4>
+    <div class="bk">
+      <div><b>Save a backup</b><span class="hint" id="bkSummary"></span></div>
+      <button type="button" class="btn" id="btnDownload">Download backup file</button>
+    </div>
+    <div class="bk">
+      <div><b>Restore a backup</b><span class="hint">Pick a Uni Log backup file (.json). It replaces everything currently in the app.</span></div>
+      <button type="button" class="btn ghost" id="btnUpload">Upload backup file</button>
+      <input type="file" id="fileRestore" accept=".json,application/json" hidden>
+    </div>
+    <div class="bk confirm" id="restoreConfirm" hidden>
+      <div><b id="restoreTitle"></b><span class="hint" id="restoreInfo"></span></div>
+      <div class="actions"><button type="button" class="btn ghost" id="restoreNo">Cancel</button><button type="button" class="btn" id="restoreYes">Replace my data</button></div>
+    </div>
+    <p class="hint" style="margin:0">On iPhone the download opens the share sheet. Choose “Save to Files” to keep it on your phone or iCloud Drive.</p>
+    <div class="actions">
+      <button type="button" class="btn danger" id="btnReset">Clear everything</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="btnClose">Done</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlgTT">
+  <form class="dlg" id="formTT" novalidate>
+    <h4 id="ttTitle">Add to timetable</h4>
+    <div class="seg" id="ttType">
+      <button type="button" data-t="class" aria-pressed="true">Weekly class</button>
+      <button type="button" data-t="event" aria-pressed="false">Exam / deadline</button>
+    </div>
+    <div class="field"><label for="tName">Title</label><input id="tName" placeholder="Leave empty to use the module name"></div>
+    <div class="field"><label for="tMod">Linked module</label><select id="tMod"></select></div>
+    <div id="tWeekly" style="display:grid;gap:14px">
+      <div class="two">
+        <div class="field"><label for="tDay">Day</label><select id="tDay"></select></div>
+        <div class="field"><label for="tKind">Type</label><select id="tKind"></select></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="tStart">Starts</label><input type="time" id="tStart" step="300"></div>
+        <div class="field"><label for="tEnd">Ends</label><input type="time" id="tEnd" step="300"></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="tRoom">Room</label><input id="tRoom" placeholder="e.g. E1 3, HS 002"></div>
+        <div class="field"><label for="tSem">Semester</label><select id="tSem"></select></div>
+      </div>
+    </div>
+    <div id="tDated" style="display:grid;gap:14px">
+      <div class="two">
+        <div class="field"><label for="tDate">Date</label><input type="date" id="tDate"></div>
+        <div class="field"><label for="tTime">Time (optional)</label><input type="time" id="tTime" step="300"></div>
+      </div>
+      <div class="field"><label for="tEKind">Type</label><select id="tEKind"></select></div>
+      <div class="field"><label for="tNote">Note</label><input id="tNote" placeholder="Room, what to bring, LSF link …"></div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn danger" id="ttDelete">Delete</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" id="ttCancel">Cancel</button>
+      <button type="submit" class="btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgSem">
+  <form class="dlg" id="formSem">
+    <h4 id="semTitle">Add semester</h4>
+    <div class="field"><label for="semLabel">Semester name</label><input id="semLabel" required placeholder="e.g. WS 26/27">
+      <span class="hint">Call it whatever you like: WS 26/27, Summer 2027, Erasmus Bergen …</span></div>
+    <label class="checkrow"><input type="checkbox" id="semCurrent"> This is my current semester</label>
+    <div class="actions">
+      <button type="button" class="btn danger" id="semDelete">Delete</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" id="semCancel">Cancel</button>
+      <button type="submit" class="btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const CATS = {
+  core:  {label:"Core lecture (Stammvorlesung)", short:"Core", cp:9, graded:true},
+  adv:   {label:"Advanced lecture in Cybersecurity", short:"Advanced", cp:6, graded:true},
+  sem:   {label:"Seminar in Cybersecurity", short:"Seminar", cp:7, graded:true},
+  ms:    {label:"Master's seminar", short:"Master seminar", cp:12, graded:true},
+  thesis:{label:"Master's thesis", short:"Thesis", cp:30, graded:true},
+  extra: {label:"Extra / ungraded elective", short:"Extra", cp:6, graded:false},
+  abroad:{label:"Abroad / recognised credits", short:"Abroad", cp:30, graded:true},
+};
+const EXTRA = {
+  project:{label:"Practical project / lab", cap:null},
+  module:{label:"Other CS / CySec module (ungraded)", cap:null},
+  tutor:{label:"Tutoring (Tutor job)", cap:null},
+  lang:{label:"Language course", cap:6},
+  soft:{label:"Soft skills seminar", cap:null},
+  intern:{label:"Internship (board-approved)", cap:6},
+  activity:{label:"Student activity / key skills", cap:3},
+};
+const GRADES = [1.0,1.3,1.7,2.0,2.3,2.7,3.0,3.3,3.7,4.0];
+const KEY = "unilog.v2";
+
+let state;
+function uid(){return Math.random().toString(36).slice(2,9)}
+function blank(){return {sems:[],mods:[],classes:[],events:[],current:null,target:2.5}}
+function normalize(s){s.classes=s.classes||[];s.events=s.events||[];s.mods.forEach(m=>{m.attempts=m.attempts||[]});return s}
+function load(){try{const raw=localStorage.getItem(KEY);if(raw){const s=JSON.parse(raw);if(s&&Array.isArray(s.mods)&&Array.isArray(s.sems))return normalize(s)}}catch(e){}return blank()}
+
+/* ---------- dates + attempts helpers ---------- */
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayStr=()=>ymd(new Date());
+const daysUntil=s=>Math.round((new Date(s+"T00:00")-new Date(todayStr()+"T00:00"))/864e5);
+const toMin=t=>{const[h,m]=(t||"0:0").split(":").map(Number);return h*60+(m||0)};
+const fmtDate=s=>new Date(s+"T00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+const untilText=n=>n===0?"today":n===1?"tomorrow":n<0?`${-n}d late`:`in ${n}d`;
+const CLASS_KINDS={lecture:["Lecture","var(--accent)"],tutorial:["Tutorial","var(--plan)"],lab:["Lab / project","var(--ok)"],other:["Other","var(--muted)"]};
+const EVENT_KINDS={exam:["Exam","var(--bad)"],deadline:["Deadline","var(--warn)"],registration:["Registration","var(--accent)"],other:["Other","var(--muted)"]};
+const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat"];
+function attInfo(m){
+  const a=m.attempts||[], counted=a.filter(x=>x.res!=="improve");
+  const passIdx=counted.findIndex(x=>x.res==="pass");
+  return {n:counted.length,passedOn:passIdx>=0?passIdx+1:0,left:Math.max(0,3-counted.length),
+    fails:counted.filter(x=>x.res!=="pass").length};
+}
+function attChip(m){
+  if(!(m.attempts||[]).length) return "";
+  const i=attInfo(m);
+  if(i.passedOn) return `<span class="chip ok">Passed on attempt ${i.passedOn}</span>`;
+  if(i.left===0) return `<span class="chip bad">No attempts left</span>`;
+  if(i.left===1) return `<span class="chip bad">Last attempt left</span>`;
+  return `<span class="chip plan">${i.left} of 3 attempts left</span>`;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+state=load();
+
+/* ---------- semesters (yours to define) ---------- */
+const semIdx=id=>state.sems.findIndex(s=>s.id===id)+1;           // 1-based, 0 if missing
+const semName=id=>state.sems.find(s=>s.id===id)?.label||"No semester";
+function currentSem(){const i=semIdx(state.current);return i||state.sems.length}
+function suggestLabel(){
+  const p=n=>String(n).padStart(2,"0"), last=state.sems[state.sems.length-1];
+  if(!last){const d=new Date(),m=d.getMonth()+1,y=d.getFullYear()%100;
+    if(m>=10) return `WS ${p(y)}/${p(y+1)}`; if(m<=3) return `WS ${p(y-1)}/${p(y)}`; return `SS ${p(y)}`}
+  let r=last.label.match(/WS\s*(\d{2})\s*\/\s*(\d{2})/i); if(r) return `SS ${r[2]}`;
+  r=last.label.match(/SS\s*(\d{2})/i); if(r){const a=Number(r[1]);return `WS ${p(a)}/${p(a+1)}`}
+  return `Semester ${state.sems.length+1}`;
+}
+
+/* ---------- allocation into requirement buckets ---------- */
+const COUNT_OPTS={core:["auto","core","pool","ungraded"],sem:["auto","sem","pool","ungraded"],adv:["auto","pool","ungraded"]};
+const COUNT_LABELS={auto:"Auto (let the app decide)",core:"Core lectures (27 CP)",sem:"Cybersecurity seminar (7 CP)",pool:"Core / Advanced / Seminar pool (30–34 CP)",ungraded:"Ungraded electives (grade not counted)"};
+const isCompulsory=m=>/cryptograph/i.test(m.name)||/^\s*security\s*$/i.test(m.name)||/^\s*security\s*\(/i.test(m.name);
+function allocate(list){
+  const B={core:0,flex:0,sem:0,ms:0,thesis:0,extra:0,abroad:0};
+  const A={}, overflow=[];
+  const put=(k,m,cp,graded)=>{B[k]+=cp;A[m.id]={k,cp,graded}};
+  const forced=m=>COUNT_OPTS[m.cat]&&m.countAs&&m.countAs!=="auto"&&COUNT_OPTS[m.cat].includes(m.countAs);
+  const by=c=>list.filter(m=>m.cat===c&&!forced(m)).sort((a,b)=>semIdx(a.sem)-semIdx(b.sem));
+  let extraCore=0, extraSem=0;
+  // 1) your own choices go first
+  list.filter(forced).sort((a,b)=>semIdx(a.sem)-semIdx(b.sem)).forEach(m=>{
+    const t=m.countAs;
+    if(t==="ungraded"){put("extra",m,m.cp,false);A[m.id].chosen=true;return}
+    const k=t==="pool"?"flex":t;
+    const cap={core:27,flex:34,sem:7}[k];
+    const over=B[k]+m.cp>cap
+      ||(k==="flex"&&m.cat==="core"&&extraCore>=1)
+      ||(k==="flex"&&m.cat==="sem"&&extraSem>=1);
+    if(k==="flex"&&m.cat==="core") extraCore++;
+    if(k==="flex"&&m.cat==="sem") extraSem++;
+    put(k,m,m.cp,true); A[m.id].chosen=true; if(over) A[m.id].over=true;
+  });
+  // 2) everything on Auto fills what's left
+  const cores=by("core").sort((a,b)=>(isCompulsory(b)-isCompulsory(a))||(semIdx(a.sem)-semIdx(b.sem)));
+  cores.forEach(m=>{
+    if(B.core+m.cp<=27) put("core",m,m.cp,true);
+    else if(extraCore<1&&B.flex+m.cp<=34){extraCore++;put("flex",m,m.cp,true)}
+    else overflow.push(m);
+  });
+  by("sem").forEach(m=>{
+    if(B.sem===0) put("sem",m,m.cp,true);
+    else if(extraSem<1&&B.flex+m.cp<=34){extraSem++;put("flex",m,m.cp,true)}
+    else overflow.push(m);
+  });
+  by("adv").forEach(m=>{ if(B.flex+m.cp<=34) put("flex",m,m.cp,true); else overflow.push(m) });
+  by("ms").forEach((m,i)=>{ if(i===0) put("ms",m,m.cp,true) });
+  by("thesis").forEach((m,i)=>{ if(i===0) put("thesis",m,m.cp,true) });
+  by("abroad").forEach(m=>put("abroad",m,m.cp,true));
+  const used={};
+  by("extra").forEach(m=>{
+    const t=m.extra||"module", cap=EXTRA[t]?.cap;
+    const room=cap==null?m.cp:Math.max(0,cap-(used[t]||0));
+    const cp=Math.min(m.cp,room); used[t]=(used[t]||0)+cp;
+    put("extra",m,cp,false); if(cp<m.cp) A[m.id].capped=true;
+  });
+  overflow.forEach(m=>{put("extra",m,m.cp,false);A[m.id].overflow=true});
+  const graded=B.core+B.flex+B.sem+B.ms+B.thesis+B.abroad;
+  return {B,A,graded,total:graded+B.extra,overflow};
+}
+
+function average(alloc,mods){
+  let s=0,c=0;
+  mods.forEach(m=>{const a=alloc.A[m.id];if(a&&a.graded&&m.grade!=null){s+=m.grade*a.cp;c+=a.cp}});
+  return c?{avg:s/c,cp:c,sum:s}:{avg:null,cp:0,sum:0};
+}
+const trunc=x=>Math.floor(x*10+1e-9)/10;
+function gradeWord(g){if(g==null)return"";if(g<=1.5)return"sehr gut";if(g<=2.5)return"gut";if(g<=3.5)return"befriedigend";return"ausreichend"}
+const fmt=g=>g==null?"–":g.toFixed(1);
+
+/* ---------- rendering ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pct=(v,max)=>Math.max(0,Math.min(100,v/max*100));
+function bar(e,p,max,markers=[]){
+  return `<div class="bar"><i class="p" style="width:${pct(p,max)}%"></i><i class="e" style="width:${pct(e,max)}%"></i>${markers.map(x=>`<span class="marker" style="left:calc(${pct(x,max)}% - 1px)"></span>`).join("")}</div>`;
+}
+function statusChip(e,p,min){
+  if(e>=min) return `<span class="chip ok">Done</span>`;
+  if(p>=min) return `<span class="chip plan">Planned</span>`;
+  return `<span class="chip bad">Short ${min-p} CP</span>`;
+}
+
+function renderOverview(){
+  const mods=state.mods;
+  const E=allocate(mods.filter(m=>m.status==="passed"));
+  const P=allocate(mods);
+  const av=average(P,mods);
+  const cur=currentSem();
+  const awaiting=mods.filter(m=>m.status==="awaiting").reduce((s,m)=>s+m.cp,0);
+
+  const reqs=[
+    {k:"core",name:"Core lectures",rule:"27 graded CP · Cryptography + Security compulsory",min:27,max:27},
+    {k:"flex",name:"Core / Advanced / Seminar pool",rule:"30–34 graded CP · max. 1 extra core + 1 extra seminar",min:30,max:34},
+    {k:"sem",name:"Cybersecurity seminar",rule:"7 graded CP",min:7,max:7},
+    {k:"ms",name:"Master's seminar",rule:"12 graded CP · before the thesis",min:12,max:12},
+    {k:"thesis",name:"Master's thesis",rule:"30 graded CP · 6 months",min:30,max:30},
+    {k:"extra",name:"Ungraded electives",rule:"at least 14 CP · projects, tutoring, language, internship …",min:14,max:null},
+  ];
+  const compNote=()=>{
+    const has=re=>mods.some(m=>m.cat==="core"&&re.test(m.name));
+    const done=re=>mods.some(m=>m.cat==="core"&&m.status==="passed"&&re.test(m.name));
+    const c=(lbl,re)=>`<span class="chip ${done(re)?"ok":has(re)?"plan":"bad"}">${lbl} ${done(re)?"✓":has(re)?"planned":"missing"}</span>`;
+    return c("Cryptography",/cryptograph/i)+c("Security",/^\s*security\s*($|\()/i);
+  };
+  const reqHtml=reqs.map(r=>{
+    const e=E.B[r.k],p=P.B[r.k],max=r.max??Math.max(r.min,p);
+    const marks=r.k==="flex"?[30]:[];
+    let foot=statusChip(e,p,r.min);
+    if(r.k==="core") foot+=compNote();
+    if(r.k==="flex"&&p>=30) foot+=`<span>${34-p} CP of headroom left</span>`;
+    if(r.k==="extra"&&P.overflow.length) foot+=`<span>${P.overflow.length} graded module(s) counted here</span>`;
+    return `<div class="req">
+      <div class="req-head"><div><div class="req-name">${r.name}</div><div class="req-rule">${r.rule}</div></div>
+      <div class="req-val">${e}<span style="color:var(--muted)"> / ${r.max&&r.max!==r.min?r.min+"–"+r.max:r.min}</span></div></div>
+      ${bar(e,p,max,marks)}
+      <div class="req-foot">${foot}${p>e?`<span>${p} CP incl. planned</span>`:""}</div></div>`;
+  }).join("");
+
+  // checkpoints (raw credits of passed modules, cumulative)
+  const cum=(n,st)=>mods.filter(m=>{const i=semIdx(m.sem);return i&&i<=n&&st.includes(m.status)}).reduce((s,m)=>s+m.cp,0);
+  const semLabel=n=>state.sems[n-1]?esc(state.sems[n-1].label):"not added yet";
+  const checks=[[2,30],[4,60],[6,90]].map(([n,need])=>{
+    const got=cum(n,["passed"]), proj=cum(n,["passed","awaiting","planned"]);
+    let chip;
+    if(got>=need) chip=`<span class="chip ok">Met</span>`;
+    else if(cur>n) chip=proj>=need?`<span class="chip plan">Grades pending</span>`:`<span class="chip bad">${need-got} CP short</span>`;
+    else chip=proj>=need?`<span class="chip plan">On plan</span>`:`<span class="chip bad">Plan ${need-proj} short</span>`;
+    return `<div class="card check"><div class="t">After sem. ${n} · ${semLabel(n)}</div><div class="v">${got}<span style="color:var(--muted);font-size:13px"> / ${need}</span></div>${chip}</div>`;
+  }).join("");
+
+  // semesters
+  let semHtml=state.sems.map((s,i)=>{
+    const n=i+1, list=mods.filter(m=>m.sem===s.id);
+    const e=list.filter(m=>m.status==="passed").reduce((a,m)=>a+m.cp,0);
+    const p=list.reduce((a,m)=>a+m.cp,0);
+    return `<div class="semrow ${n===cur?"now":""}">
+      <button class="semlbl" data-sem="${s.id}" aria-label="Edit ${esc(s.label)}"><b>Sem ${n}${n===cur?" · now":""}</b><span>${esc(s.label)}</span><em>Edit</em></button>
+      <div>${bar(e,p,Math.max(30,p),[30])}<div class="mods">${list.map(m=>`<span class="tag" title="${esc(m.name)}">${esc(m.name.length>22?m.name.slice(0,21)+"…":m.name)}</span>`).join("")||`<span class="tag" style="background:transparent;color:var(--muted)">No modules yet</span>`}</div></div>
+      <div class="cp">${p}</div></div>`;
+  }).join("");
+  if(!state.sems.length) semHtml=`<div class="empty">No semesters yet. Add the ones you need, then log modules into them.</div>`;
+  semHtml+=`<button class="addrow" id="addSemO">+ Add semester</button>`;
+
+  // notes
+  const notes=[];
+  P.overflow.forEach(m=>notes.push(`<b>${esc(m.name)}</b> doesn't fit its graded section (limits reached), so it counts as an ungraded elective instead. You can change this with “Counts toward” on the module.`));
+  mods.filter(m=>P.A[m.id]?.over).forEach(m=>{
+    const k=P.A[m.id].k, lim={core:"27 CP for core lectures",flex:"34 CP for the pool, with at most one extra core lecture and one extra seminar",sem:"7 CP for the Cybersecurity seminar"}[k];
+    notes.push(`You set <b>${esc(m.name)}</b> to count toward a section that is now over its limit (${lim}). Move it or another module somewhere else.`);
+  });
+  mods.filter(m=>m.cat==="extra"&&P.A[m.id]?.capped).forEach(m=>notes.push(`<b>${esc(m.name)}</b> is over the ${EXTRA[m.extra]?.cap} CP limit for ${EXTRA[m.extra]?.label.toLowerCase()}; only part of it counts.`));
+  if(P.graded>110) notes.push(`Graded credits add up to ${P.graded} CP. The regulations allow at most 110 graded CP in total.`);
+  const ms=mods.find(m=>m.cat==="ms"), th=mods.find(m=>m.cat==="thesis");
+  if(ms&&th&&semIdx(th.sem)<=semIdx(ms.sem)) notes.push("The Master's seminar must be completed before you finish the thesis. Put the thesis in a later semester.");
+  if(ms&&th&&semIdx(th.sem)>semIdx(ms.sem)+1) notes.push("Register the thesis within one semester after passing the Master's seminar, otherwise you need a new Master's seminar.");
+  const ab=P.B.abroad;
+  if(ab) notes.push(`${ab} CP from abroad aren't sorted into categories yet. Your learning agreement decides which requirements they cover. Right now the pool still needs ${Math.max(0,30-P.B.flex)} CP and electives ${Math.max(0,14-P.B.extra)} CP.`);
+  mods.forEach(m=>{const i=attInfo(m);if(!i.passedOn&&i.n&&i.left===0) notes.push(`<b>${esc(m.name)}</b> has used all 3 attempts. Talk to the examination office about your options.`)});
+  if(awaiting) notes.push(`${awaiting} CP are waiting for grades. Set them to Passed once the grade is in.`);
+
+  // planner
+  const projectedGradedRemaining=Math.max(106,P.graded)-av.cp;
+  const tgt=state.target||2.5;
+  let ans;
+  if(projectedGradedRemaining<=0) ans=`All graded credits have grades. Final average: <b>${fmt(trunc(av.avg))}</b>`;
+  else{
+    const need=(tgt*(av.cp+projectedGradedRemaining)-av.sum)/projectedGradedRemaining;
+    if(need<1.0) ans=`A final ${tgt.toFixed(1)} is out of reach. Even straight 1.0s would give about <b>${fmt(trunc((av.sum+projectedGradedRemaining)/(av.cp+projectedGradedRemaining)))}</b>.`;
+    else if(need>=4.0) ans=`Any pass keeps you at ${tgt.toFixed(1)} or better.`;
+    else ans=`You need an average of <b>${need.toFixed(2)}</b> on the remaining <span class="num">${projectedGradedRemaining}</span> graded CP.`;
+  }
+
+  const earned=E.total, proj=P.total;
+  $("#view-overview").innerHTML=`
+    <div class="card hero">
+      <div class="big num">${earned}<small> / 120 CP</small></div>
+      <div class="sub">${cur?`${semLabel(cur)} · semester ${cur} · `:""}${proj} CP in your full plan</div>
+      ${bar(earned,proj,120,[30,60,90])}
+      <div class="legend"><span><i class="sw e"></i>Passed</span><span><i class="sw p"></i>Awaiting + planned</span><span>Ticks: 30 · 60 · 90 CP checkpoints</span></div>
+      <div class="stats">
+        <div class="stat"><b>${av.avg==null?"–":fmt(trunc(av.avg))}</b><span>Grade avg ${av.avg==null?"":"· "+gradeWord(trunc(av.avg))}</span></div>
+        <div class="stat"><b>${E.graded}<span style="font-size:13px;color:var(--muted)"> / 106–110</span></b><span>Graded CP</span></div>
+        <div class="stat"><b>${E.B.extra}<span style="font-size:13px;color:var(--muted)"> / 14</span></b><span>Ungraded CP</span></div>
+      </div>
+    </div>
+    <div><h2>Coming up</h2><div class="card agenda">${upcoming().slice(0,3).map(evRow).join("")||`<div class="empty">No exams or deadlines yet. Add them in Timetable.</div>`}</div></div>
+    ${(()=>{const risk=mods.filter(m=>{const i=attInfo(m);return i.fails>0&&!i.passedOn});
+      return risk.length?`<div><h2>Exam attempts</h2><div class="card agenda">${risk.map(m=>{const i=attInfo(m);
+        return `<div class="it"><i class="bullet" style="--c:${i.left<=1?"var(--bad)":"var(--warn)"}"></i><button class="ttb" data-mod="${m.id}"><b>${esc(m.name)}</b><span>${i.fails} failed · ${i.n} of 3 used</span></button><div class="right">${attChip(m)}</div></div>`}).join("")}</div></div>`:""})()}
+    <div><h2>Requirements</h2><div class="card reqs">${reqHtml}</div></div>
+    <div><h2>Credit checkpoints</h2><div class="checks">${checks}</div>
+      <p class="hint" style="margin:8px 0 0">Minimum credits the faculty expects by these semesters. Counts passed modules only.</p></div>
+    <div><h2>Semester outline</h2><div class="card sems">${semHtml}</div></div>
+    <div><h2>Grade planner</h2><div class="card planner">
+      <div class="row"><label for="pTarget">Target final grade</label>
+      <select id="pTarget">${[1.3,1.5,1.7,2.0,2.3,2.5,2.7,3.0,3.3,3.5].map(g=>`<option ${g===tgt?"selected":""}>${g.toFixed(1)}</option>`).join("")}</select></div>
+      <div class="answer">${ans}</div>
+      <div class="hint">Credit-weighted average over graded modules (${av.cp} CP graded so far). German averages are cut after the first decimal, not rounded. The exam office's calculation is binding.</div>
+    </div></div>
+    ${notes.length?`<div><h2>Things to check</h2><div class="card notes">${notes.map(n=>`<div class="note"><div>${n}</div></div>`).join("")}</div></div>`:""}
+  `;
+  $("#pTarget").onchange=e=>{state.target=Number(e.target.value);save();renderOverview()};
+  document.querySelectorAll("#view-overview .semlbl").forEach(b=>b.onclick=()=>openSem(b.dataset.sem));
+  document.querySelectorAll("#view-overview [data-mod]").forEach(b=>b.onclick=()=>openModule(b.dataset.mod));
+  bindAgenda($("#view-overview"));
+  $("#addSemO").onclick=()=>openSem(null);
+}
+
+let filter="all";
+function renderModules(){
+  const P=allocate(state.mods);
+  const where=m=>{
+    const a=P.A[m.id]; if(!a) return `<span class="chip bad">Not counted</span>`;
+    const names={core:"Core",flex:"Pool",sem:"Seminar",ms:"Master seminar",thesis:"Thesis",extra:"Ungraded",abroad:"To map"};
+    return `<span class="chip ${a.over?"bad":"mute"}">→ ${names[a.k]}${a.chosen?" · your choice":""}${a.over?" · over limit":""}${a.overflow?" (overflow)":""}${a.capped?` (${a.cp} of ${m.cp})`:""}</span>`;
+  };
+  const st={passed:`<span class="chip ok">Passed</span>`,awaiting:`<span class="chip plan">Awaiting grade</span>`,planned:`<span class="chip mute">Planned</span>`};
+  const shown=state.mods.filter(m=>filter==="all"||m.cat===filter);
+  const sems=state.sems.filter(s=>filter==="all"||shown.some(m=>m.sem===s.id));
+  const fl=[["all","All"],["core","Core"],["adv","Advanced"],["sem","Seminar"],["extra","Extra"],["ms","Master sem."],["thesis","Thesis"],["abroad","Abroad"]];
+  $("#view-modules").innerHTML=`
+    <div class="toolbar"><div class="filters">${fl.map(([k,l])=>`<button data-f="${k}" aria-pressed="${filter===k}">${l}</button>`).join("")}</div>
+      <button class="btn ghost" id="addSemM">+ Semester</button></div>
+    ${sems.length?sems.map(s=>{
+      const n=semIdx(s.id), list=shown.filter(m=>m.sem===s.id);
+      return `<div class="group"><h3><span class="gh">Sem ${n} · ${esc(s.label)}${n===currentSem()?" · now":""}</span><span>${list.reduce((a,m)=>a+m.cp,0)} CP <button class="linkbtn" data-sem="${s.id}">Edit</button></span></h3>
+      <div class="card">${list.length?"":`<div class="empty">No modules in this semester yet.</div>`}${list.map(m=>`<button class="mod" data-id="${m.id}">
+        <span class="n">${esc(m.name)}</span>
+        <span class="g">${m.grade!=null?fmt(m.grade):(CATS[m.cat].graded?"–":"✓")}</span>
+        <span class="meta"><span>${CATS[m.cat].short}${m.cat==="extra"?" · "+(EXTRA[m.extra]?.label||""):""}</span><span class="num">${m.cp} CP</span>${st[m.status]}${attChip(m)}${where(m)}</span>
+      </button>`).join("")}</div></div>`}).join(""):`<div class="card empty">${state.sems.length?"No modules in this category yet. Tap “Add module” to log one.":"Start by adding a semester, then log your modules into it."}</div>`}
+  `;
+  document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{filter=b.dataset.f;renderModules()});
+  document.querySelectorAll("#view-modules .linkbtn").forEach(b=>b.onclick=()=>openSem(b.dataset.sem));
+  $("#addSemM").onclick=()=>openSem(null);
+  document.querySelectorAll(".mod").forEach(b=>b.onclick=()=>openModule(b.dataset.id));
+}
+
+function renderRules(){
+  $("#view-rules").innerHTML=`
+    <div><h2>Graduation requirements</h2>
+    <div class="card rules"><dl>
+      <div class="r"><dt>120 CP</dt><dd><b>Total</b><span>106–110 CP must be graded. As a rule 30 CP per semester; standard duration 4 semesters.</span></dd></div>
+      <div class="r"><dt>27 CP</dt><dd><b>Core lectures (9 CP each)</b><span>Cryptography and Security are compulsory. If you passed Fundamentals of Cybersecurity I + II in your Bachelor's, take another core instead of Security.</span></dd></div>
+      <div class="r"><dt>30–34 CP</dt><dd><b>Core, advanced lectures or CySec seminars</b><span>Advanced lectures are usually 6 CP, seminars 7 CP. At most one additional core lecture and one additional seminar may count here.</span></dd></div>
+      <div class="r"><dt>7 CP</dt><dd><b>Seminar in Cybersecurity</b><span>Graded.</span></dd></div>
+      <div class="r"><dt>12 CP</dt><dd><b>Master's seminar</b><span>Must be directly related to your thesis and passed before you finish it. Register the thesis within one semester after the seminar.</span></dd></div>
+      <div class="r"><dt>30 CP</dt><dd><b>Master's thesis</b><span>Six months of work.</span></dd></div>
+      <div class="r"><dt>≥ 14 CP</dt><dd><b>Ungraded electives</b><span>Practical projects (6 CP), extra core/advanced/seminar modules, tutoring (usually 4 CP), language courses (max 6 CP, not your native language), soft skills seminar, board-approved internship (max 6 CP), student activities or key-skill courses (max 3 CP each).</span></dd></div>
+      <div class="r"><dt>Retakes</dt><dd><b>Grade improvement</b><span>Core lecture exams can be retaken once in the same exam period to improve the grade; the better grade counts. Advanced lectures only if the lecturer announced it.</span></dd></div>
+      <div class="r"><dt>30·60·90</dt><dd><b>Credit checkpoints</b><span>At least 30 CP after 2 semesters, 60 after 4, 90 after 6.</span></dd></div>
+    </dl></div></div>
+    <div class="prose">
+      <p>Summarised from the Study Regulations for the M.Sc. Cybersecurity (25 February 2021) and the university's programme page. The German original in the Dienstblatt is legally binding; check with the examination office before you rely on a number.</p>
+      <p><a href="https://www.uni-saarland.de/en/study/programmes/master/cybersecurity.html" target="_blank" rel="noopener">Programme page</a> · <a href="https://www.ps-mint.uni-saarland.de/documents/computer_science/cybersec/cybersecurity_sto_msc_2021_en.pdf" target="_blank" rel="noopener">Study regulations (PDF)</a> · <a href="https://www.ps-mint.uni-saarland.de/en/programmes/cybersecurity" target="_blank" rel="noopener">Examination office</a></p>
+    </div>`;
+}
+
+/* ---------- timetable ---------- */
+const modName=id=>state.mods.find(m=>m.id===id)?.name;
+const itemTitle=x=>x.title||modName(x.modId)||"Untitled";
+function upcoming(){
+  return state.events.filter(e=>!e.done&&(daysUntil(e.date)>=0||e.kind!=="exam"))
+    .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+}
+function evRow(e){
+  const n=daysUntil(e.date), k=EVENT_KINDS[e.kind]||EVENT_KINDS.other;
+  const m=e.modId&&state.mods.find(x=>x.id===e.modId);
+  let extra="";
+  if(e.kind==="exam"&&m){const i=attInfo(m); if(!i.passedOn) extra=` · attempt ${Math.min(3,i.n+1)} of 3`}
+  return `<div class="it ${e.done?"done":""}"><i class="bullet" style="--c:${k[1]}"></i>
+    <button class="ttb" data-ev="${e.id}"><b>${esc(itemTitle(e))}</b><span>${k[0]} · ${fmtDate(e.date)}${e.time?" · "+e.time:""}${extra}${e.note?" · "+esc(e.note):""}</span></button>
+    <div class="right"><span class="days ${n<0&&!e.done?"late":""}">${untilText(n)}</span><input type="checkbox" class="tick" data-tick="${e.id}" ${e.done?"checked":""} aria-label="Mark ${esc(itemTitle(e))} as done"></div></div>`;
+}
+function classRow(c){
+  const k=CLASS_KINDS[c.kind]||CLASS_KINDS.other;
+  return `<div class="it"><i class="bullet" style="--c:${k[1]}"></i>
+    <button class="ttb" data-cls="${c.id}"><b>${esc(itemTitle(c))}</b><span>${k[0]}${c.room?" · "+esc(c.room):""}</span></button>
+    <div class="right"><span class="days">${c.start}–${c.end}</span></div></div>`;
+}
+function bindAgenda(root){
+  root.querySelectorAll("[data-ev]").forEach(b=>b.onclick=()=>openTT("event",b.dataset.ev));
+  root.querySelectorAll("[data-cls]").forEach(b=>b.onclick=()=>openTT("class",b.dataset.cls));
+  root.querySelectorAll("[data-tick]").forEach(b=>b.onchange=()=>{const e=state.events.find(x=>x.id===b.dataset.tick);if(e){e.done=b.checked;save();render()}});
+}
+
+let ttView="week", ttSem=null, monthCursor=null, selDay=todayStr();
+function renderTimetable(){
+  const semId=(ttSem&&semIdx(ttSem))?ttSem:state.sems[currentSem()-1]?.id;
+  const classes=state.classes.filter(c=>c.sem===semId);
+  const semSel=state.sems.length?`<select id="ttSem" aria-label="Semester">${state.sems.map(s=>`<option value="${s.id}" ${s.id===semId?"selected":""}>${esc(s.label)}</option>`).join("")}</select>`:"";
+  let body="";
+  if(ttView==="week"){
+    if(!state.sems.length) body=`<div class="card empty">Add a semester first, then put your weekly lectures and tutorials here.</div>`;
+    else{
+      const nd=classes.some(c=>c.day===6)?6:5;
+      let h0=8,h1=18; classes.forEach(c=>{h0=Math.min(h0,Math.floor(toMin(c.start)/60));h1=Math.max(h1,Math.ceil(toMin(c.end)/60))});
+      const HH=46,H=(h1-h0)*HH,td=new Date().getDay();
+      let g=`<div class="week" style="--hh:${HH}px;grid-template-columns:44px repeat(${nd},minmax(84px,1fr))"><div></div>`;
+      g+=DAYS.slice(0,nd).map((d,i)=>`<div class="dh ${td===i+1?"today":""}">${d}</div>`).join("");
+      g+=`<div class="tcol" style="height:${H}px">`;
+      for(let h=h0;h<h1;h++) g+=`<span class="tl" style="top:${(h-h0)*HH+2}px">${pad(h)}:00</span>`;
+      g+=`</div>`;
+      for(let d=1;d<=nd;d++){
+        g+=`<div class="col ${td===d?"today":""}" style="height:${H}px">`+classes.filter(c=>c.day===d).map(c=>{
+          const top=(toMin(c.start)-h0*60)/60*HH, ht=Math.max(24,(toMin(c.end)-toMin(c.start))/60*HH);
+          return `<button class="blk" data-cls="${c.id}" style="top:${top}px;height:${ht-2}px;--c:${(CLASS_KINDS[c.kind]||CLASS_KINDS.other)[1]}"><b>${esc(itemTitle(c))}</b><span>${c.start}–${c.end}${c.room?" · "+esc(c.room):""}</span></button>`;
+        }).join("")+`</div>`;
+      }
+      g+=`</div>`;
+      body=`<div class="card weekwrap">${g}</div>${classes.length?"":`<p class="hint" style="margin:0">No weekly classes in this semester yet. Tap “Add to timetable”.</p>`}
+        <div class="legend">${Object.values(CLASS_KINDS).map(k=>`<span><i class="sw" style="background:${k[1]}"></i>${k[0]}</span>`).join("")}</div>`;
+    }
+  } else {
+    const now=new Date(), base=monthCursor||new Date(now.getFullYear(),now.getMonth(),1);
+    const y=base.getFullYear(), mo=base.getMonth(), off=(new Date(y,mo,1).getDay()+6)%7;
+    const dim=new Date(y,mo+1,0).getDate(), cells=Math.ceil((off+dim)/7)*7, today=todayStr();
+    let g=`<div class="month">${["Mo","Tu","We","Th","Fr","Sa","Su"].map(d=>`<div class="wd">${d}</div>`).join("")}`;
+    for(let i=0;i<cells;i++){
+      const d=new Date(y,mo,1-off+i), s=ymd(d), evs=state.events.filter(e=>e.date===s);
+      g+=`<button class="day ${d.getMonth()!==mo?"out":""} ${s===today?"today":""}" data-day="${s}" aria-pressed="${s===selDay}" aria-label="${fmtDate(s)}${evs.length?", "+evs.length+" items":""}">
+        <span class="d">${d.getDate()}</span><span class="dots">${evs.map(e=>`<i class="dot" style="--c:${(EVENT_KINDS[e.kind]||EVENT_KINDS.other)[1]}"></i>`).join("")}</span></button>`;
+    }
+    g+=`</div>`;
+    const wd=new Date(selDay+"T00:00").getDay();
+    const dayCls=classes.filter(c=>c.day===wd).sort((a,b)=>toMin(a.start)-toMin(b.start));
+    const dayEv=state.events.filter(e=>e.date===selDay);
+    body=`<div class="card">${g}</div>
+      <div><h2>${fmtDate(selDay)}</h2><div class="card agenda">${dayEv.map(evRow).join("")}${dayCls.map(classRow).join("")||""}${!dayEv.length&&!dayCls.length?`<div class="empty">Nothing on this day.</div>`:""}</div></div>`;
+    monthCursor=base;
+  }
+  const up=upcoming();
+  $("#view-timetable").innerHTML=`
+    <div class="ttbar"><div class="seg"><button data-v="week" aria-pressed="${ttView==="week"}">Week</button><button data-v="month" aria-pressed="${ttView==="month"}">Month</button></div>
+      ${ttView==="week"?semSel:`<div class="mnav"><button class="icon-btn" id="mPrev" aria-label="Previous month">‹</button><b>${(monthCursor).toLocaleDateString("en-GB",{month:"short",year:"numeric"})}</b><button class="icon-btn" id="mNext" aria-label="Next month">›</button></div>`}</div>
+    ${body}
+    <div><h2>Exams & deadlines</h2><div class="card agenda">${up.map(evRow).join("")||`<div class="empty">Nothing coming up. Add exam dates and deadlines with “Add to timetable”.</div>`}</div></div>
+    ${state.events.some(e=>e.done)?`<p class="hint" style="margin:0">${state.events.filter(e=>e.done).length} done item(s) are hidden from this list. They stay in the month view.</p>`:""}`;
+  document.querySelectorAll("#view-timetable [data-v]").forEach(b=>b.onclick=()=>{ttView=b.dataset.v;renderTimetable()});
+  $("#ttSem")&&($("#ttSem").onchange=e=>{ttSem=e.target.value;renderTimetable()});
+  $("#mPrev")&&($("#mPrev").onclick=()=>{monthCursor=new Date(monthCursor.getFullYear(),monthCursor.getMonth()-1,1);renderTimetable()});
+  $("#mNext")&&($("#mNext").onclick=()=>{monthCursor=new Date(monthCursor.getFullYear(),monthCursor.getMonth()+1,1);renderTimetable()});
+  document.querySelectorAll("#view-timetable [data-day]").forEach(b=>b.onclick=()=>{selDay=b.dataset.day;renderTimetable()});
+  bindAgenda($("#view-timetable"));
+}
+
+function render(){renderOverview();renderModules();renderTimetable();renderRules()}
+
+/* ---------- tabs ---------- */
+let tab="overview";
+function showTab(t){
+  tab=t;
+  ["overview","modules","timetable","rules"].forEach(k=>$("#view-"+k).hidden=k!==t);
+  document.querySelectorAll(".tabbar button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  $("#fab").hidden=t==="rules";
+  $("#fab").textContent=t==="timetable"?"+ Add to timetable":"+ Add module";
+  try{localStorage.setItem(KEY+".tab",t)}catch(e){}
+  window.scrollTo(0,0);
+}
+document.querySelectorAll(".tabbar button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+/* ---------- module dialog ---------- */
+const dlg=$("#dlgModule"); let editing=null, delArmed=false;
+$("#fCat").innerHTML=Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.label}</option>`).join("");
+$("#fExtra").innerHTML=Object.entries(EXTRA).map(([k,c])=>`<option value="${k}">${c.label}${c.cap?` (max ${c.cap} CP)`:""}</option>`).join("");
+$("#fGrade").innerHTML=`<option value="">No grade yet</option>`+GRADES.map(g=>`<option value="${g}">${g.toFixed(1)}</option>`).join("");
+function fillSems(){$("#fSem").innerHTML=state.sems.map((s,i)=>`<option value="${s.id}">Sem ${i+1} · ${esc(s.label)}</option>`).join("")}
+function syncForm(){
+  const c=$("#fCat").value, s=$("#fStatus").value;
+  $("#wrapExtra").hidden=c!=="extra";
+  $("#wrapGrade").hidden=!CATS[c].graded||s!=="passed";
+  $("#wrapAttempts").hidden=["ms","thesis","abroad"].includes(c);
+  const opts=COUNT_OPTS[c], sel=$("#fCount");
+  $("#wrapCount").hidden=!opts;
+  if(opts){
+    const prev=sel.value;
+    sel.innerHTML=opts.map(o=>`<option value="${o}">${COUNT_LABELS[o]}</option>`).join("");
+    sel.value=opts.includes(prev)?prev:"auto";
+    $("#countHint").textContent=sel.value==="ungraded"
+      ?"The grade won't count in your average. Useful for a module you'd rather keep out of it."
+      :sel.value==="auto"?"Auto fills the core section first, then the pool, then ungraded electives."
+      :"The app puts it here and warns you if that section goes over its limit.";
+  }
+}
+/* attempts inside the module dialog */
+let att=[];
+$("#aResult").innerHTML=`<optgroup label="Not passed"><option value="fail">Failed (5.0)</option><option value="noshow">Missed without excuse (5.0)</option></optgroup>`+
+  `<optgroup label="Passed">${GRADES.map(g=>`<option value="pass:${g}">Passed · ${g.toFixed(1)}</option>`).join("")}</optgroup>`+
+  `<optgroup label="Voluntary retake to improve">${GRADES.map(g=>`<option value="improve:${g}">Improvement · ${g.toFixed(1)}</option>`).join("")}</optgroup>`;
+function renderAtt(){
+  att.sort((a,b)=>(a.date||"9").localeCompare(b.date||"9"));
+  const i=attInfo({attempts:att}); let k=0;
+  const chip=$("#attLeft");
+  chip.className="chip "+(i.passedOn?"ok":i.left<=1&&att.length?"bad":"mute");
+  chip.textContent=i.passedOn?`passed on attempt ${i.passedOn}`:`${i.left} of 3 left`;
+  $("#attList").innerHTML=att.map(a=>{
+    const counted=a.res!=="improve"; if(counted) k++;
+    const lbl=a.res==="fail"?"Failed · 5.0":a.res==="noshow"?"Missed · 5.0":a.res==="pass"?`Passed · ${a.grade.toFixed(1)}`:`Improvement · ${a.grade.toFixed(1)}`;
+    return `<div class="att"><span><b>${counted?"Attempt "+k:"Retake"}</b> · ${lbl}${a.date?` <span class="hint">${fmtDate(a.date)}</span>`:""}</span><button type="button" class="x" data-aid="${a.id}">Remove</button></div>`;
+  }).join("");
+  $("#attList").querySelectorAll("[data-aid]").forEach(b=>b.onclick=()=>{att=att.filter(a=>a.id!==b.dataset.aid);renderAtt()});
+  const best=att.filter(a=>a.res==="pass"||a.res==="improve").map(a=>a.grade);
+  if(best.length){$("#fStatus").value="passed";$("#fGrade").value=String(Math.min(...best));syncForm()}
+  $("#aAdd").disabled=!i.passedOn&&i.left===0;
+}
+$("#aAdd").onclick=()=>{
+  const [res,g]=$("#aResult").value.split(":");
+  att.push({id:uid(),date:$("#aDate").value||null,res,grade:g?Number(g):null}); renderAtt();
+};
+$("#fCat").onchange=()=>{ if(!editing) $("#fCp").value=CATS[$("#fCat").value].cp; syncForm() };
+$("#fStatus").onchange=syncForm;
+$("#fCount").onchange=syncForm;
+function openModule(id){
+  fillSems(); editing=id?state.mods.find(m=>m.id===id):null; delArmed=false;
+  const defSem=state.sems[currentSem()-1]?.id;
+  const m=editing||{name:"",cat:"adv",cp:6,sem:defSem,status:"planned",grade:null,extra:"project"};
+  $("#dlgTitle").textContent=editing?"Edit module":"Add module";
+  $("#fName").value=m.name; $("#fCat").value=m.cat; $("#fCp").value=m.cp; $("#fSem").value=m.sem||defSem;
+  $("#fStatus").value=m.status; $("#fGrade").value=m.grade==null?"":String(m.grade); $("#fExtra").value=m.extra||"project";
+  $("#btnDelete").hidden=!editing; $("#btnDelete").textContent="Delete";
+  att=JSON.parse(JSON.stringify(m.attempts||[])); $("#aDate").value=todayStr();
+  $("#fCount").innerHTML=`<option value="${m.countAs||"auto"}"></option>`; $("#fCount").value=m.countAs||"auto";
+  syncForm(); renderAtt(); dlg.showModal();
+}
+$("#fab").onclick=()=>{
+  if(tab==="timetable") return openTT(ttView==="month"?"event":"class",null);
+  if(!state.sems.length){toast("Add a semester first");openSem(null)} else openModule(null);
+};
+
+/* ---------- timetable dialog ---------- */
+const tdl=$("#dlgTT"); let ttEdit=null, ttType="class", ttDelArmed=false;
+$("#tDay").innerHTML=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].map((d,i)=>`<option value="${i+1}">${d}</option>`).join("");
+$("#tKind").innerHTML=Object.entries(CLASS_KINDS).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join("");
+$("#tEKind").innerHTML=Object.entries(EVENT_KINDS).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join("");
+function setTTType(t){
+  ttType=t;
+  document.querySelectorAll("#ttType button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===t));
+  $("#tWeekly").hidden=t!=="class"; $("#tDated").hidden=t!=="event";
+}
+document.querySelectorAll("#ttType button").forEach(b=>b.onclick=()=>{if(!ttEdit)setTTType(b.dataset.t)});
+function openTT(kind,id){
+  ttEdit=id?(kind==="class"?state.classes:state.events).find(x=>x.id===id):null; ttDelArmed=false;
+  setTTType(kind);
+  $("#ttType").hidden=!!ttEdit;
+  $("#ttTitle").textContent=ttEdit?(kind==="class"?"Edit class":"Edit date"):"Add to timetable";
+  $("#tMod").innerHTML=`<option value="">None</option>`+state.mods.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
+  $("#tSem").innerHTML=state.sems.map(s=>`<option value="${s.id}">${esc(s.label)}</option>`).join("");
+  const x=ttEdit||{};
+  $("#tName").value=x.title||""; $("#tMod").value=x.modId||"";
+  $("#tDay").value=x.day||Math.min(6,Math.max(1,new Date().getDay()||1)); $("#tKind").value=x.kind&&CLASS_KINDS[x.kind]?x.kind:"lecture";
+  $("#tStart").value=x.start||"10:15"; $("#tEnd").value=x.end||"12:00"; $("#tRoom").value=x.room||"";
+  $("#tSem").value=x.sem||(ttSem&&semIdx(ttSem)?ttSem:state.sems[currentSem()-1]?.id)||"";
+  $("#tDate").value=x.date||(ttView==="month"?selDay:todayStr()); $("#tTime").value=x.time||"";
+  $("#tEKind").value=x.kind&&EVENT_KINDS[x.kind]?x.kind:"exam"; $("#tNote").value=x.note||"";
+  $("#ttDelete").hidden=!ttEdit; $("#ttDelete").textContent="Delete";
+  tdl.showModal();
+}
+$("#ttCancel").onclick=()=>tdl.close();
+$("#ttDelete").onclick=()=>{
+  if(!ttDelArmed){ttDelArmed=true;$("#ttDelete").textContent="Tap again to delete";return}
+  if(ttType==="class") state.classes=state.classes.filter(c=>c!==ttEdit); else state.events=state.events.filter(e=>e!==ttEdit);
+  save(); tdl.close(); render(); toast("Deleted");
+};
+$("#formTT").addEventListener("submit",e=>{
+  e.preventDefault();
+  const title=$("#tName").value.trim(), modId=$("#tMod").value||null;
+  if(!title&&!modId){toast("Give it a title or link a module");return}
+  if(ttType==="class"){
+    const start=$("#tStart").value,end=$("#tEnd").value,sem=$("#tSem").value;
+    if(!sem){toast("Add a semester first");return}
+    if(!start||!end||toMin(end)<=toMin(start)){toast("The end time must be after the start time");return}
+    const c={id:ttEdit?.id||uid(),title,modId,sem,day:Number($("#tDay").value),start,end,room:$("#tRoom").value.trim(),kind:$("#tKind").value};
+    if(ttEdit) state.classes[state.classes.indexOf(ttEdit)]=c; else state.classes.push(c);
+    ttSem=sem;
+  } else {
+    const date=$("#tDate").value; if(!date){toast("Pick a date");return}
+    const ev={id:ttEdit?.id||uid(),title,modId,date,time:$("#tTime").value||"",kind:$("#tEKind").value,note:$("#tNote").value.trim(),done:ttEdit?.done||false};
+    if(ttEdit) state.events[state.events.indexOf(ttEdit)]=ev; else state.events.push(ev);
+    selDay=date;
+  }
+  save(); tdl.close(); render(); toast(ttEdit?"Saved":"Added to timetable");
+});
+
+/* ---------- semester dialog ---------- */
+const sdl=$("#dlgSem"); let semEditing=null, semDelArmed=false;
+function openSem(id){
+  semEditing=id?state.sems.find(s=>s.id===id):null; semDelArmed=false;
+  $("#semTitle").textContent=semEditing?"Edit semester":"Add semester";
+  $("#semLabel").value=semEditing?semEditing.label:suggestLabel();
+  $("#semCurrent").checked=semEditing?state.current===semEditing.id:!state.sems.length;
+  const count=semEditing?state.mods.filter(m=>m.sem===semEditing.id).length:0;
+  $("#semDelete").hidden=!semEditing; $("#semDelete").textContent=count?`Delete (+${count} modules)`:"Delete";
+  sdl.showModal();
+}
+$("#semCancel").onclick=()=>sdl.close();
+$("#semDelete").onclick=()=>{
+  if(!semDelArmed){semDelArmed=true;$("#semDelete").textContent="Tap again to delete";return}
+  const id=semEditing.id;
+  state.sems=state.sems.filter(s=>s.id!==id); state.mods=state.mods.filter(m=>m.sem!==id);
+  if(state.current===id) state.current=null;
+  save(); sdl.close(); render(); toast("Semester deleted");
+};
+$("#formSem").addEventListener("submit",e=>{
+  e.preventDefault();
+  const label=$("#semLabel").value.trim()||suggestLabel();
+  let s=semEditing; if(s) s.label=label; else {s={id:uid(),label}; state.sems.push(s)}
+  if($("#semCurrent").checked) state.current=s.id; else if(state.current===s.id) state.current=null;
+  save(); sdl.close(); render(); toast(semEditing?"Semester saved":"Semester added");
+});
+$("#btnCancel").onclick=()=>dlg.close();
+$("#btnDelete").onclick=()=>{
+  if(!delArmed){delArmed=true;$("#btnDelete").textContent="Tap again to delete";return}
+  state.mods=state.mods.filter(m=>m!==editing); save(); dlg.close(); render(); toast("Module deleted");
+};
+$("#formModule").addEventListener("submit",e=>{
+  e.preventDefault();
+  const c=$("#fCat").value, s=$("#fStatus").value;
+  const g=$("#fGrade").value;
+  const m={
+    id:editing?editing.id:uid(), name:$("#fName").value.trim()||"Untitled module", cat:c,
+    cp:Math.max(1,Math.round(Number($("#fCp").value)||CATS[c].cp)), sem:Number($("#fSem").value), status:s,
+    grade:(CATS[c].graded&&s==="passed"&&g!=="")?Number(g):null, extra:$("#fExtra").value,
+    attempts:["ms","thesis","abroad"].includes(c)?[]:att,
+    countAs:COUNT_OPTS[c]?$("#fCount").value:"auto"
+  };
+  if(editing) state.mods[state.mods.indexOf(editing)]=m; else state.mods.push(m);
+  save(); dlg.close(); render(); toast(editing?"Saved":"Module added");
+});
+
+/* ---------- settings ---------- */
+const sd=$("#dlgSettings");
+$("#btnSettings").onclick=()=>{
+  $("#bkSummary").textContent=`Saves all ${state.sems.length} semesters, ${state.mods.length} modules, attempts and ${state.classes.length+state.events.length} timetable items into one file.`;
+  $("#restoreConfirm").hidden=true; sd.showModal();
+};
+$("#btnClose").onclick=()=>sd.close();
+
+/* backup file: download */
+let downloadsApi=null;
+window.claude?.use?.("downloads")?.then(d=>{downloadsApi=d},()=>{});
+$("#btnUpload").onclick=()=>$("#fileRestore").click();
+$("#btnDownload").onclick=async()=>{
+  const data=JSON.stringify({app:"uni-log",version:2,savedAt:new Date().toISOString(),...state},null,1);
+  const filename=`uni-log-backup-${todayStr()}.json`;
+  if(downloadsApi){
+    try{await downloadsApi.save({filename,data});toast("Backup saved")}
+    catch(e){
+      if(e?.code==="declined") toast("Download cancelled");
+      else if(e?.code==="rate_limited") toast("A save prompt is already open");
+      else copyFallback(data);
+    }
+  } else nativeSave(filename,data);
+};
+/* outside Claude (GitHub Pages / home-screen app): share sheet on iPhone, normal download elsewhere */
+async function nativeSave(filename,data){
+  const file=new File([data],filename,{type:"application/json"});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Uni Log backup"});toast("Backup ready");return}
+  }catch(e){if(e?.name==="AbortError"){toast("Download cancelled");return}}
+  try{
+    const url=URL.createObjectURL(file), a=document.createElement("a");
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);toast("Backup downloaded");
+  }catch(e){copyFallback(data)}
+}
+function copyFallback(data){
+  navigator.clipboard?.writeText(data).then(()=>toast("Downloads aren't available here, backup copied as text instead"),
+    ()=>toast("Downloads aren't available in this view")) ?? toast("Downloads aren't available in this view");
+}
+
+/* backup file: restore */
+let pendingRestore=null;
+$("#fileRestore").onchange=e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const s=JSON.parse(r.result);
+      if(!Array.isArray(s.mods)||!Array.isArray(s.sems)) throw 0;
+      delete s.app; delete s.version; const when=s.savedAt; delete s.savedAt;
+      s.mods.forEach(m=>{m.id=m.id||uid()});
+      pendingRestore=normalize(s);
+      $("#restoreTitle").textContent=`Restore “${f.name}”?`;
+      $("#restoreInfo").textContent=`${s.sems.length} semesters, ${s.mods.length} modules, ${s.classes.length+s.events.length} timetable items${when?` · saved ${new Date(when).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"})}`:""}. Your current data will be replaced.`;
+      $("#restoreConfirm").hidden=false;
+    }catch(err){toast("That file isn't a Uni Log backup")}
+  };
+  r.onerror=()=>toast("Couldn't read that file");
+  r.readAsText(f);
+};
+$("#restoreNo").onclick=()=>{pendingRestore=null;$("#restoreConfirm").hidden=true};
+$("#restoreYes").onclick=()=>{
+  if(!pendingRestore) return;
+  state=pendingRestore; pendingRestore=null; save(); render();
+  $("#restoreConfirm").hidden=true; sd.close(); toast("Backup restored");
+};
+let resetArmed=false;
+$("#btnReset").onclick=()=>{
+  if(!resetArmed){resetArmed=true;$("#btnReset").textContent="Tap again to clear";setTimeout(()=>{resetArmed=false;$("#btnReset").textContent="Clear everything"},3000);return}
+  state=blank(); save(); render(); sd.close(); toast("Everything cleared");
+};
+
+let tt;
+function toast(msg){let el=$(".toast");if(!el){el=document.createElement("div");el.className="toast";el.setAttribute("role","status");document.body.appendChild(el)}
+  el.textContent=msg;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800)}
+
+render();
+try{const t=localStorage.getItem(KEY+".tab");if(t)showTab(t)}catch(e){}
+</script>
+
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
+</body>
+</html>
