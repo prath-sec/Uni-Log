@@ -369,6 +369,11 @@ dialog::backdrop{background:rgba(8,12,18,.45)}
         <div class="field"><label for="tRoom">Room</label><input id="tRoom" placeholder="e.g. E1 3, HS 002"></div>
         <div class="field"><label for="tSem">Semester</label><select id="tSem"></select></div>
       </div>
+      <div class="two">
+        <div class="field"><label for="tFrom">First class</label><input type="date" id="tFrom"></div>
+        <div class="field"><label for="tUntil">Last class</label><input type="date" id="tUntil"></div>
+      </div>
+      <span class="hint" style="margin-top:-6px">Leave empty if you don't know yet. Outside these dates the slot is hidden from the week and day views.</span>
     </div>
     <div id="tDated" style="display:grid;gap:14px">
       <div class="two">
@@ -427,7 +432,12 @@ const KEY = "unilog.v2";
 let state;
 function uid(){return Math.random().toString(36).slice(2,9)}
 function blank(){return {sems:[],mods:[],classes:[],events:[],current:null,target:2.5}}
-function normalize(s){s.classes=s.classes||[];s.events=s.events||[];s.mods.forEach(m=>{m.attempts=m.attempts||[]});return s}
+function normalize(s){
+  s.classes=s.classes||[];s.events=s.events||[];
+  const ids=new Set(s.sems.map(x=>x.id));
+  s.mods.forEach(m=>{m.attempts=m.attempts||[]; if(!ids.has(m.sem)) m.sem=null});
+  return s;
+}
 function load(){try{const raw=localStorage.getItem(KEY);if(raw){const s=JSON.parse(raw);if(s&&Array.isArray(s.mods)&&Array.isArray(s.sems))return normalize(s)}}catch(e){}return blank()}
 
 /* ---------- dates + attempts helpers ---------- */
@@ -621,6 +631,8 @@ function renderOverview(){
   const ab=P.B.abroad;
   if(ab) notes.push(`${ab} CP from abroad aren't sorted into categories yet. Your learning agreement decides which requirements they cover. Right now the pool still needs ${Math.max(0,30-P.B.flex)} CP and electives ${Math.max(0,14-P.B.extra)} CP.`);
   mods.forEach(m=>{const i=attInfo(m);if(!i.passedOn&&i.n&&i.left===0) notes.push(`<b>${esc(m.name)}</b> has used all 3 attempts. Talk to the examination office about your options.`)});
+  const looseN=mods.filter(m=>!semIdx(m.sem)).length;
+  if(looseN) notes.push(`${looseN} module(s) have no semester yet, so checkpoints and the semester outline leave them out. Open the Modules tab and pick one for each.`);
   if(awaiting) notes.push(`${awaiting} CP are waiting for grades. Set them to Passed once the grade is in.`);
 
   // planner
@@ -682,10 +694,14 @@ function renderModules(){
   const st={passed:`<span class="chip ok">Passed</span>`,awaiting:`<span class="chip plan">Awaiting grade</span>`,planned:`<span class="chip mute">Planned</span>`};
   const shown=state.mods.filter(m=>filter==="all"||m.cat===filter);
   const sems=state.sems.filter(s=>filter==="all"||shown.some(m=>m.sem===s.id));
+  const loose=shown.filter(m=>!semIdx(m.sem));
   const fl=[["all","All"],["core","Core"],["adv","Advanced"],["sem","Seminar"],["extra","Extra"],["ms","Master sem."],["thesis","Thesis"],["abroad","Abroad"]];
   $("#view-modules").innerHTML=`
     <div class="toolbar"><div class="filters">${fl.map(([k,l])=>`<button data-f="${k}" aria-pressed="${filter===k}">${l}</button>`).join("")}</div>
       <button class="btn ghost" id="addSemM">+ Semester</button></div>
+    ${loose.length?`<div class="group"><h3><span class="gh">Needs a semester</span><span>${loose.length} module(s)</span></h3>
+      <div class="card">${loose.map(m=>`<button class="mod" data-id="${m.id}"><span class="n">${esc(m.name)}</span><span class="g">${m.cp} CP</span>
+      <span class="meta"><span class="chip bad">Tap to pick a semester</span></span></button>`).join("")}</div></div>`:""}
     ${sems.length?sems.map(s=>{
       const n=semIdx(s.id), list=shown.filter(m=>m.sem===s.id);
       return `<div class="group"><h3><span class="gh">Sem ${n} · ${esc(s.label)}${n===currentSem()?" · now":""}</span><span>${list.reduce((a,m)=>a+m.cp,0)} CP <button class="linkbtn" data-sem="${s.id}">Edit</button></span></h3>
@@ -737,10 +753,16 @@ function evRow(e){
     <button class="ttb" data-ev="${e.id}"><b>${esc(itemTitle(e))}</b><span>${k[0]} · ${fmtDate(e.date)}${e.time?" · "+e.time:""}${extra}${e.note?" · "+esc(e.note):""}</span></button>
     <div class="right"><span class="days ${n<0&&!e.done?"late":""}">${untilText(n)}</span><input type="checkbox" class="tick" data-tick="${e.id}" ${e.done?"checked":""} aria-label="Mark ${esc(itemTitle(e))} as done"></div></div>`;
 }
+const activeOn=(c,s)=>(!c.from||s>=c.from)&&(!c.until||s<=c.until);
+function rangeText(c){
+  const f=d=>new Date(d+"T00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  if(c.from&&c.until) return `${f(c.from)} – ${f(c.until)}`;
+  if(c.from) return `from ${f(c.from)}`; if(c.until) return `until ${f(c.until)}`; return "";
+}
 function classRow(c){
-  const k=CLASS_KINDS[c.kind]||CLASS_KINDS.other;
+  const k=CLASS_KINDS[c.kind]||CLASS_KINDS.other, r=rangeText(c);
   return `<div class="it"><i class="bullet" style="--c:${k[1]}"></i>
-    <button class="ttb" data-cls="${c.id}"><b>${esc(itemTitle(c))}</b><span>${k[0]}${c.room?" · "+esc(c.room):""}</span></button>
+    <button class="ttb" data-cls="${c.id}"><b>${esc(itemTitle(c))}</b><span>${k[0]}${c.room?" · "+esc(c.room):""}${r?" · "+r:""}</span></button>
     <div class="right"><span class="days">${c.start}–${c.end}</span></div></div>`;
 }
 function bindAgenda(root){
@@ -749,7 +771,8 @@ function bindAgenda(root){
   root.querySelectorAll("[data-tick]").forEach(b=>b.onchange=()=>{const e=state.events.find(x=>x.id===b.dataset.tick);if(e){e.done=b.checked;save();render()}});
 }
 
-let ttView="week", ttSem=null, monthCursor=null, selDay=todayStr();
+let ttView="week", ttSem=null, monthCursor=null, selDay=todayStr(), weekCursor=null;
+const mondayOf=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
 function renderTimetable(){
   const semId=(ttSem&&semIdx(ttSem))?ttSem:state.sems[currentSem()-1]?.id;
   const classes=state.classes.filter(c=>c.sem===semId);
@@ -758,22 +781,33 @@ function renderTimetable(){
   if(ttView==="week"){
     if(!state.sems.length) body=`<div class="card empty">Add a semester first, then put your weekly lectures and tutorials here.</div>`;
     else{
+      const mon=weekCursor||mondayOf(new Date()); weekCursor=mon;
+      const dayStr=d=>{const x=new Date(mon);x.setDate(x.getDate()+d-1);return ymd(x)};
+      const showing=d=>classes.filter(c=>c.day===d&&activeOn(c,dayStr(d)));
       const nd=classes.some(c=>c.day===6)?6:5;
       let h0=8,h1=18; classes.forEach(c=>{h0=Math.min(h0,Math.floor(toMin(c.start)/60));h1=Math.max(h1,Math.ceil(toMin(c.end)/60))});
-      const HH=46,H=(h1-h0)*HH,td=new Date().getDay();
+      const HH=46,H=(h1-h0)*HH,today=todayStr();
+      const hiddenN=classes.filter(c=>c.day<=nd&&!activeOn(c,dayStr(c.day))).length;
       let g=`<div class="week" style="--hh:${HH}px;grid-template-columns:44px repeat(${nd},minmax(84px,1fr))"><div></div>`;
-      g+=DAYS.slice(0,nd).map((d,i)=>`<div class="dh ${td===i+1?"today":""}">${d}</div>`).join("");
+      g+=DAYS.slice(0,nd).map((d,i)=>`<div class="dh ${dayStr(i+1)===today?"today":""}">${d} ${new Date(dayStr(i+1)+"T00:00").getDate()}</div>`).join("");
       g+=`<div class="tcol" style="height:${H}px">`;
       for(let h=h0;h<h1;h++) g+=`<span class="tl" style="top:${(h-h0)*HH+2}px">${pad(h)}:00</span>`;
       g+=`</div>`;
       for(let d=1;d<=nd;d++){
-        g+=`<div class="col ${td===d?"today":""}" style="height:${H}px">`+classes.filter(c=>c.day===d).map(c=>{
+        g+=`<div class="col ${dayStr(d)===today?"today":""}" style="height:${H}px">`+showing(d).map(c=>{
           const top=(toMin(c.start)-h0*60)/60*HH, ht=Math.max(24,(toMin(c.end)-toMin(c.start))/60*HH);
           return `<button class="blk" data-cls="${c.id}" style="top:${top}px;height:${ht-2}px;--c:${(CLASS_KINDS[c.kind]||CLASS_KINDS.other)[1]}"><b>${esc(itemTitle(c))}</b><span>${c.start}–${c.end}${c.room?" · "+esc(c.room):""}</span></button>`;
         }).join("")+`</div>`;
       }
       g+=`</div>`;
-      body=`<div class="card weekwrap">${g}</div>${classes.length?"":`<p class="hint" style="margin:0">No weekly classes in this semester yet. Tap “Add to timetable”.</p>`}
+      const sun=new Date(mon);sun.setDate(sun.getDate()+6);
+      const f=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+      body=`<div class="mnav" style="justify-content:space-between"><button class="icon-btn" id="wPrev" aria-label="Previous week">‹</button>
+          <b style="font-size:16px;flex:1">${f(mon)} – ${f(sun)}</b>
+          ${ymd(mon)!==ymd(mondayOf(new Date()))?`<button class="btn ghost" id="wToday" style="padding:7px 12px">This week</button>`:""}
+          <button class="icon-btn" id="wNext" aria-label="Next week">›</button></div>
+        <div class="card weekwrap">${g}</div>${classes.length?"":`<p class="hint" style="margin:0">No weekly classes in this semester yet. Tap “Add to timetable”.</p>`}
+        ${hiddenN?`<p class="hint" style="margin:0">${hiddenN} slot(s) hidden this week because they're outside their first/last class dates.</p>`:""}
         <div class="legend">${Object.values(CLASS_KINDS).map(k=>`<span><i class="sw" style="background:${k[1]}"></i>${k[0]}</span>`).join("")}</div>`;
     }
   } else {
@@ -788,7 +822,7 @@ function renderTimetable(){
     }
     g+=`</div>`;
     const wd=new Date(selDay+"T00:00").getDay();
-    const dayCls=classes.filter(c=>c.day===wd).sort((a,b)=>toMin(a.start)-toMin(b.start));
+    const dayCls=classes.filter(c=>c.day===wd&&activeOn(c,selDay)).sort((a,b)=>toMin(a.start)-toMin(b.start));
     const dayEv=state.events.filter(e=>e.date===selDay);
     body=`<div class="card">${g}</div>
       <div><h2>${fmtDate(selDay)}</h2><div class="card agenda">${dayEv.map(evRow).join("")}${dayCls.map(classRow).join("")||""}${!dayEv.length&&!dayCls.length?`<div class="empty">Nothing on this day.</div>`:""}</div></div>`;
@@ -803,6 +837,10 @@ function renderTimetable(){
     ${state.events.some(e=>e.done)?`<p class="hint" style="margin:0">${state.events.filter(e=>e.done).length} done item(s) are hidden from this list. They stay in the month view.</p>`:""}`;
   document.querySelectorAll("#view-timetable [data-v]").forEach(b=>b.onclick=()=>{ttView=b.dataset.v;renderTimetable()});
   $("#ttSem")&&($("#ttSem").onchange=e=>{ttSem=e.target.value;renderTimetable()});
+  const shiftW=n=>{const x=new Date(weekCursor);x.setDate(x.getDate()+7*n);weekCursor=x;renderTimetable()};
+  $("#wPrev")&&($("#wPrev").onclick=()=>shiftW(-1));
+  $("#wNext")&&($("#wNext").onclick=()=>shiftW(1));
+  $("#wToday")&&($("#wToday").onclick=()=>{weekCursor=mondayOf(new Date());renderTimetable()});
   $("#mPrev")&&($("#mPrev").onclick=()=>{monthCursor=new Date(monthCursor.getFullYear(),monthCursor.getMonth()-1,1);renderTimetable()});
   $("#mNext")&&($("#mNext").onclick=()=>{monthCursor=new Date(monthCursor.getFullYear(),monthCursor.getMonth()+1,1);renderTimetable()});
   document.querySelectorAll("#view-timetable [data-day]").forEach(b=>b.onclick=()=>{selDay=b.dataset.day;renderTimetable()});
@@ -915,6 +953,8 @@ function openTT(kind,id){
   $("#tDay").value=x.day||Math.min(6,Math.max(1,new Date().getDay()||1)); $("#tKind").value=x.kind&&CLASS_KINDS[x.kind]?x.kind:"lecture";
   $("#tStart").value=x.start||"10:15"; $("#tEnd").value=x.end||"12:00"; $("#tRoom").value=x.room||"";
   $("#tSem").value=x.sem||(ttSem&&semIdx(ttSem)?ttSem:state.sems[currentSem()-1]?.id)||"";
+  const prev=[...state.classes].reverse().find(c=>c.sem===$("#tSem").value&&(c.from||c.until));
+  $("#tFrom").value=ttEdit?(x.from||""):(prev?.from||""); $("#tUntil").value=ttEdit?(x.until||""):(prev?.until||"");
   $("#tDate").value=x.date||(ttView==="month"?selDay:todayStr()); $("#tTime").value=x.time||"";
   $("#tEKind").value=x.kind&&EVENT_KINDS[x.kind]?x.kind:"exam"; $("#tNote").value=x.note||"";
   $("#ttDelete").hidden=!ttEdit; $("#ttDelete").textContent="Delete";
@@ -934,7 +974,9 @@ $("#formTT").addEventListener("submit",e=>{
     const start=$("#tStart").value,end=$("#tEnd").value,sem=$("#tSem").value;
     if(!sem){toast("Add a semester first");return}
     if(!start||!end||toMin(end)<=toMin(start)){toast("The end time must be after the start time");return}
-    const c={id:ttEdit?.id||uid(),title,modId,sem,day:Number($("#tDay").value),start,end,room:$("#tRoom").value.trim(),kind:$("#tKind").value};
+    const from=$("#tFrom").value||"", until=$("#tUntil").value||"";
+    if(from&&until&&until<from){toast("The last class must be on or after the first class");return}
+    const c={id:ttEdit?.id||uid(),title,modId,sem,day:Number($("#tDay").value),start,end,room:$("#tRoom").value.trim(),kind:$("#tKind").value,from,until};
     if(ttEdit) state.classes[state.classes.indexOf(ttEdit)]=c; else state.classes.push(c);
     ttSem=sem;
   } else {
@@ -983,7 +1025,7 @@ $("#formModule").addEventListener("submit",e=>{
   const g=$("#fGrade").value;
   const m={
     id:editing?editing.id:uid(), name:$("#fName").value.trim()||"Untitled module", cat:c,
-    cp:Math.max(1,Math.round(Number($("#fCp").value)||CATS[c].cp)), sem:Number($("#fSem").value), status:s,
+    cp:Math.max(1,Math.round(Number($("#fCp").value)||CATS[c].cp)), sem:$("#fSem").value||null, status:s,
     grade:(CATS[c].graded&&s==="passed"&&g!=="")?Number(g):null, extra:$("#fExtra").value,
     attempts:["ms","thesis","abroad"].includes(c)?[]:att,
     countAs:COUNT_OPTS[c]?$("#fCount").value:"auto"
