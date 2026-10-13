@@ -465,8 +465,40 @@ function attChip(m){
   if(i.left===1) return `<span class="chip bad">Last attempt left</span>`;
   return `<span class="chip plan">${i.left} of 3 attempts left</span>`;
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+/* Two copies on the device: localStorage (fast, read at start) + IndexedDB (sturdier on iPhone).
+   On start the newer copy wins, so if one gets wiped the other brings the data back. */
+const IDB={
+  _db:null,
+  open(){ if(this._db) return this._db;
+    this._db=new Promise(res=>{try{const r=indexedDB.open("unilog",1);
+      r.onupgradeneeded=()=>r.result.createObjectStore("kv");
+      r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); r.onblocked=()=>res(null);}catch(e){res(null)}});
+    return this._db; },
+  async get(k){const db=await this.open(); if(!db) return null;
+    return new Promise(res=>{try{const q=db.transaction("kv").objectStore("kv").get(k);q.onsuccess=()=>res(q.result??null);q.onerror=()=>res(null)}catch(e){res(null)}})},
+  async set(k,v){const db=await this.open(); if(!db) return false;
+    return new Promise(res=>{try{const t=db.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=()=>res(true);t.onerror=()=>res(false)}catch(e){res(false)}})}
+};
+const hasData=s=>!!s&&((s.sems?.length||0)+(s.mods?.length||0)+(s.classes?.length||0)+(s.events?.length||0))>0;
+let storageOK={local:false,idb:false,persisted:null};
+function save(){
+  state.savedAt=Date.now();
+  const json=JSON.stringify(state);
+  try{localStorage.setItem(KEY,json);storageOK.local=true}catch(e){storageOK.local=false}
+  IDB.set(KEY,json).then(ok=>{storageOK.idb=ok});
+}
 state=load();
+(async()=>{
+  try{localStorage.setItem(KEY+".probe","1");localStorage.removeItem(KEY+".probe");storageOK.local=true}catch(e){}
+  try{const raw=await IDB.get(KEY); storageOK.idb=raw!=null||!!(await IDB.open());
+    if(raw){const s=JSON.parse(raw);
+      if(s&&Array.isArray(s.mods)&&Array.isArray(s.sems)&&hasData(s)&&(!hasData(state)||(s.savedAt||0)>(state.savedAt||0))){
+        state=normalize(s); try{localStorage.setItem(KEY,raw);storageOK.local=true}catch(e){} render();
+      }
+    } else if(hasData(state)) IDB.set(KEY,JSON.stringify(state));
+  }catch(e){}
+  try{ if(navigator.storage?.persist){ storageOK.persisted=(await navigator.storage.persisted?.())||(await navigator.storage.persist()) } }catch(e){}
+})();
 
 /* ---------- semesters (yours to define) ---------- */
 const semIdx=id=>state.sems.findIndex(s=>s.id===id)+1;           // 1-based, 0 if missing
@@ -631,6 +663,11 @@ function renderOverview(){
   const ab=P.B.abroad;
   if(ab) notes.push(`${ab} CP from abroad aren't sorted into categories yet. Your learning agreement decides which requirements they cover. Right now the pool still needs ${Math.max(0,30-P.B.flex)} CP and electives ${Math.max(0,14-P.B.extra)} CP.`);
   mods.forEach(m=>{const i=attInfo(m);if(!i.passedOn&&i.n&&i.left===0) notes.push(`<b>${esc(m.name)}</b> has used all 3 attempts. Talk to the examination office about your options.`)});
+  if(hasData(state)){
+    const lb=state.lastBackup, age=lb?Math.floor((Date.now()-lb)/864e5):null;
+    if(age==null) notes.push(`You haven't downloaded a backup yet. Open Settings (⚙︎) → <b>Download backup file</b> and save it to Files, so nothing is lost if the phone clears the app's data.`);
+    else if(age>=7) notes.push(`Your last backup is ${age} days old. Download a fresh one in Settings (⚙︎).`);
+  }
   const looseN=mods.filter(m=>!semIdx(m.sem)).length;
   if(looseN) notes.push(`${looseN} module(s) have no semester yet, so checkpoints and the semester outline leave them out. Open the Modules tab and pick one for each.`);
   if(awaiting) notes.push(`${awaiting} CP are waiting for grades. Set them to Passed once the grade is in.`);
@@ -1037,9 +1074,13 @@ $("#formModule").addEventListener("submit",e=>{
 /* ---------- settings ---------- */
 const sd=$("#dlgSettings");
 $("#btnSettings").onclick=()=>{
-  $("#bkSummary").textContent=`Saves all ${state.sems.length} semesters, ${state.mods.length} modules, attempts and ${state.classes.length+state.events.length} timetable items into one file.`;
-  $("#restoreConfirm").hidden=true; sd.showModal();
+  updateBkSummary(); $("#restoreConfirm").hidden=true; sd.showModal();
 };
+function updateBkSummary(){
+  const lb=state.lastBackup?new Date(state.lastBackup).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}):"never";
+  const where=[storageOK.local&&"browser storage",storageOK.idb&&"database"].filter(Boolean).join(" + ")||"unknown";
+  $("#bkSummary").textContent=`Saves all ${state.sems.length} semesters, ${state.mods.length} modules, attempts and ${state.classes.length+state.events.length} timetable items into one file. Last backup: ${lb}. On this device the data is kept in: ${where}${storageOK.persisted?" (marked permanent)":""}.`;
+}
 $("#btnClose").onclick=()=>sd.close();
 
 /* backup file: download */
@@ -1050,7 +1091,7 @@ $("#btnDownload").onclick=async()=>{
   const data=JSON.stringify({app:"uni-log",version:2,savedAt:new Date().toISOString(),...state},null,1);
   const filename=`uni-log-backup-${todayStr()}.json`;
   if(downloadsApi){
-    try{await downloadsApi.save({filename,data});toast("Backup saved")}
+    try{await downloadsApi.save({filename,data});markBackup();toast("Backup saved")}
     catch(e){
       if(e?.code==="declined") toast("Download cancelled");
       else if(e?.code==="rate_limited") toast("A save prompt is already open");
@@ -1062,14 +1103,15 @@ $("#btnDownload").onclick=async()=>{
 async function nativeSave(filename,data){
   const file=new File([data],filename,{type:"application/json"});
   try{
-    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Uni Log backup"});toast("Backup ready");return}
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Uni Log backup"});markBackup();toast("Backup ready");return}
   }catch(e){if(e?.name==="AbortError"){toast("Download cancelled");return}}
   try{
     const url=URL.createObjectURL(file), a=document.createElement("a");
     a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),4000);toast("Backup downloaded");
+    setTimeout(()=>URL.revokeObjectURL(url),4000);markBackup();toast("Backup downloaded");
   }catch(e){copyFallback(data)}
 }
+function markBackup(){state.lastBackup=Date.now();save();render();updateBkSummary()}
 function copyFallback(data){
   navigator.clipboard?.writeText(data).then(()=>toast("Downloads aren't available here, backup copied as text instead"),
     ()=>toast("Downloads aren't available in this view")) ?? toast("Downloads aren't available in this view");
